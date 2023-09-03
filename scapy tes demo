@@ -1,0 +1,15 @@
+import scapy.all as scapy
+
+def sniff_packets(interface):
+    scapy.sniff(iface=interface, store=False, prn=process_packet)
+
+def process_packet(packet):
+    # Implement logic untuk memeriksa paket dan mendeteksi serangan
+    # Contoh sederhana: jika paket mengandung kata "malicious", anggap sebagai serangan
+    if "malicious" in str(packet):
+        print("Detected a potential cyber attack: " + str(packet.summary()))
+
+if __name__ == "__main__":
+    # Ganti 'eth0' dengan antarmuka jaringan yang sesuai di PC Anda
+    interface = "eth0"
+    sniff_packets(interface)
