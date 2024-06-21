@@ -1,0 +1,61 @@
+from scapy.all import *
+import random
+import time
+
+def complex_network_scan(target_ip, ports):
+    # Fungsi untuk melakukan pemindaian TCP SYN
+    def tcp_syn_scan(ip, port):
+        src_port = RandShort()
+        resp = sr1(IP(dst=ip)/TCP(sport=src_port, dport=port, flags="S"), timeout=2, verbose=0)
+        if resp:
+            if resp.haslayer(TCP) and resp.getlayer(TCP).flags == 0x12:
+                send(IP(dst=ip)/TCP(sport=src_port, dport=port, flags="R"), verbose=0)
+                return True
+        return False
+
+    # Fungsi untuk melakukan pemindaian UDP
+    def udp_scan(ip, port):
+        resp = sr1(IP(dst=ip)/UDP(dport=port), timeout=2, verbose=0)
+        if resp:
+            if resp.haslayer(ICMP):
+                return False
+        return True
+
+    # Fungsi untuk melakukan pemindaian OS fingerprinting
+    def os_fingerprint(ip):
+        os_match = nmap_fp(ip)
+        return os_match
+
+    # Melakukan pemindaian
+    open_ports = []
+    for port in ports:
+        if random.choice([True, False]):  # Acak antara TCP dan UDP
+            if tcp_syn_scan(target_ip, port):
+                open_ports.append(f"TCP {port}")
+        else:
+            if udp_scan(target_ip, port):
+                open_ports.append(f"UDP {port}")
+        time.sleep(0.5)  # Jeda untuk menghindari deteksi
+
+    # Mencoba OS fingerprinting
+    os = os_fingerprint(target_ip)
+
+    # Melakukan traceroute
+    traceroute_result = traceroute(target_ip, maxttl=20, verbose=0)[0].get_trace()
+
+    return {
+        "open_ports": open_ports,
+        "os_guess": os,
+        "traceroute": traceroute_result
+    }
+
+# Penggunaan
+target = "192.168.1.1"
+port_list = [22, 80, 443, 3306, 8080]
+result = complex_network_scan(target, port_list)
+
+print(f"Open ports: {result['open_ports']}")
+print(f"OS guess: {result['os_guess']}")
+print("Traceroute:")
+for hop in result['traceroute']:
+    print(f"  Hop {hop}: {result['traceroute'][hop][0]}")
